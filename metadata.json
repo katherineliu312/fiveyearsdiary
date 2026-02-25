@@ -1,0 +1,5 @@
+{
+  "name": "年轮",
+  "description": "A 5-year diary application allowing users to record and compare the same day across multiple years to track growth and emotions. Features AI-powered insights to analyze life patterns over time.",
+  "requestFramePermissions": []
+}
