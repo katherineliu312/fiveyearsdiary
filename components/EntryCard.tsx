@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { DiaryEntry, MOODS, INSPIRATION_PROMPTS } from '../types';
 import * as storageService from '../services/storageService';
-import { TrashIcon } from './Icons';
+import { TrashIcon, CameraIcon, XIcon } from './Icons';
 
 interface EntryCardProps {
   dayMonth: string;
@@ -14,12 +14,14 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
   const [year, setYear] = useState(initialData.year);
   const [content, setContent] = useState(initialData.content || '');
   const [mood, setMood] = useState<string | undefined>(initialData.mood);
+  const [image, setImage] = useState<string | undefined>(initialData.image);
   const [isFocused, setIsFocused] = useState(false);
   
   // If the entry has no content yet, allow editing the year by default
-  const [isEditingYear, setIsEditingYear] = useState(!initialData.content && !initialData.mood);
+  const [isEditingYear, setIsEditingYear] = useState(!initialData.content && !initialData.mood && !initialData.image);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pick a random prompt when the component mounts
   const randomPrompt = useMemo(() => {
@@ -39,9 +41,10 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
     setYear(initialData.year);
     setContent(initialData.content);
     setMood(initialData.mood);
+    setImage(initialData.image);
   }, [initialData]);
 
-  const handleSave = (newYear: number, newContent: string, newMood: string | undefined) => {
+  const handleSave = (newYear: number, newContent: string, newMood: string | undefined, newImage: string | undefined) => {
     // If user changed year, we need to delete the OLD year entry from storage first to avoid duplicates
     if (newYear !== initialData.year) {
         storageService.deleteEntry(
@@ -57,6 +60,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
       year: newYear,
       content: newContent,
       mood: newMood,
+      image: newImage,
       lastEdited: Date.now(),
     };
 
@@ -71,15 +75,40 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
       if (
         content !== initialData.content || 
         mood !== initialData.mood || 
-        year !== initialData.year
+        year !== initialData.year ||
+        image !== initialData.image
       ) {
-         handleSave(year, content, mood);
+         handleSave(year, content, mood, image);
       }
     }, 800);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content, mood, year]);
+  }, [content, mood, year, image]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (limit to ~1MB for localStorage safety)
+    if (file.size > 1024 * 1024) {
+      alert("Image is too large. Please choose an image smaller than 1MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImage(undefined);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -179,7 +208,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
       </div>
 
       {/* Input Area */}
-      <div className="relative">
+      <div className="relative flex flex-col gap-4">
           <textarea
             ref={textareaRef}
             value={content}
@@ -190,6 +219,41 @@ const EntryCard: React.FC<EntryCardProps> = ({ dayMonth, initialData, onUpdate, 
             className="w-full resize-none outline-none bg-transparent text-lg leading-relaxed text-ink placeholder:text-stone-300 placeholder:italic min-h-[80px]"
             rows={2}
           />
+
+          {image && (
+            <div className="relative group/img w-full max-h-[400px] overflow-hidden rounded-lg border border-stone-100">
+                <img 
+                    src={image} 
+                    alt="Memory" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                />
+                <button 
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/70"
+                >
+                    <XIcon className="w-4 h-4" />
+                </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-xs font-medium text-stone-400 hover:text-accent transition-colors py-1"
+                title="Add photo"
+            >
+                <CameraIcon className="w-4 h-4" />
+                {image ? 'Change Photo' : 'Add Photo'}
+            </button>
+            <input 
+                ref={fileInputRef}
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="hidden" 
+            />
+          </div>
       </div>
       
       {/* Decorative Line */}

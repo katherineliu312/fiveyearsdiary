@@ -59,23 +59,42 @@ export const deleteEntry = (month: number, day: number, year: number): void => {
  * Returns a map of Day -> Count of entries for a specific month.
  * Key: day number (1-31), Value: count of entries across all years.
  */
-export const getEntryCountsForMonth = (month: number): Record<number, number> => {
+export const getEntryCountsForMonth = (month: number, year?: number): Record<number, number> => {
     const db = getDB();
     const result: Record<number, number> = {};
     const monthPrefix = month.toString().padStart(2, '0');
 
-    // Key format is "MM-DD"
     Object.keys(db).forEach(key => {
         const [m, d] = key.split('-');
         if (m === monthPrefix) {
             const dayNum = parseInt(d);
-            // Count how many years have entries
-            const count = Object.keys(db[key]).length;
-            if (count > 0) {
-                result[dayNum] = count;
+            if (year) {
+                // Count only for specific year
+                if (db[key][year]) {
+                    result[dayNum] = 1;
+                }
+            } else {
+                // Count how many years have entries (Annual Rings)
+                const count = Object.keys(db[key]).length;
+                if (count > 0) {
+                    result[dayNum] = count;
+                }
             }
         }
     });
 
     return result;
+};
+
+export const getAllYears = (): number[] => {
+    const db = getDB();
+    const years = new Set<number>();
+    const currentYear = new Date().getFullYear();
+    years.add(currentYear); // Always include current year
+    
+    Object.values(db).forEach(yearMap => {
+        Object.keys(yearMap).forEach(year => years.add(parseInt(year)));
+    });
+    
+    return Array.from(years).sort((a, b) => a - b);
 };

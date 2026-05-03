@@ -4,6 +4,7 @@ export interface DiaryEntry {
   year: number;
   content: string;
   mood?: string; // Emoji
+  image?: string; // Base64 string
   lastEdited: number;
 }
 

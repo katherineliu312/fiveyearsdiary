@@ -9,16 +9,14 @@ interface CalendarViewProps {
 
 const CalendarView: React.FC<CalendarViewProps> = ({ onSelectDate, initialDate }) => {
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
-  // Counts map: Day -> Number of entries
   const [counts, setCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
-    // Month is 0-indexed in JS Date, but 1-indexed in our storage
-    const data = storageService.getEntryCountsForMonth(currentMonth + 1);
+    const data = storageService.getEntryCountsForMonth(currentMonth + 1, undefined);
     setCounts(data);
   }, [currentMonth]);
 
-  const daysInMonth = new Date(2024, currentMonth + 1, 0).getDate(); // Using leap year 2024 to allow 29 days in Feb generally
+  const daysInMonth = new Date(2024, currentMonth + 1, 0).getDate();
   const monthName = new Date(2024, currentMonth).toLocaleString('en-US', { month: 'long' });
 
   const handleMonthChange = (delta: number) => {
@@ -38,22 +36,31 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onSelectDate, initialDate }
   return (
     <div className="flex flex-col h-full bg-paper pt-6">
       {/* Month Navigator */}
-      <div className="flex items-center justify-between px-8 mb-8">
-        <button 
-          onClick={() => handleMonthChange(-1)}
-          className="p-2 rounded-full hover:bg-white text-stone-400 hover:text-ink transition-colors"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <h2 className="font-serif text-3xl text-ink font-medium tracking-wide">
-          {monthName}
-        </h2>
-        <button 
-          onClick={() => handleMonthChange(1)}
-          className="p-2 rounded-full hover:bg-white text-stone-400 hover:text-ink transition-colors"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </button>
+      <div className="flex flex-col items-center gap-4 px-8 mb-8">
+        <div className="flex items-center justify-between w-full max-w-md">
+            <button 
+                onClick={() => handleMonthChange(-1)}
+                className="p-2 rounded-full hover:bg-white text-stone-400 hover:text-ink transition-colors"
+                title="Previous Month"
+            >
+                <ChevronLeft className="w-6 h-6" />
+            </button>
+            <div className="text-center">
+                <h2 className="font-serif text-3xl text-ink font-medium tracking-wide">
+                    {monthName}
+                </h2>
+                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-400 mt-1">
+                    Annual Rings
+                </p>
+            </div>
+            <button 
+                onClick={() => handleMonthChange(1)}
+                className="p-2 rounded-full hover:bg-white text-stone-400 hover:text-ink transition-colors"
+                title="Next Month"
+            >
+                <ChevronRight className="w-6 h-6" />
+            </button>
+        </div>
       </div>
 
       {/* Grid */}
